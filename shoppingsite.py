@@ -7,7 +7,7 @@ Authors: Joel Burton, Christian Fernandez, Meggie Mahnken.
 """
 
 
-from flask import Flask, render_template, redirect, flash
+from flask import Flask, render_template, redirect, flash, session
 import jinja2
 
 import melons
@@ -50,7 +50,7 @@ def show_melon(melon_id):
     Show all info about a melon. Also, provide a button to buy that melon.
     """
 
-    melon = melons.get_by_id(59)
+    melon = melons.get_by_id(melon_id)
     print melon
     return render_template("melon_details.html",
                            display_melon=melon)
@@ -63,13 +63,35 @@ def shopping_cart():
     # TODO: Display the contents of the shopping cart.
 
     # The logic here will be something like:
-    #
+    
     # - get the list-of-ids-of-melons from the session cart
     # - loop over this list:
     #   - keep track of information about melon types in the cart
     #   - keep track of the total amt ordered for a melon-type
     #   - keep track of the total amt of the entire order
     # - hand to the template the total order cost and the list of melon types
+    shopping_list = session["cart"]
+
+    melon_id_dictionary = {}
+    
+    for id in shopping_list:
+        if id in melon_id_dictionary:
+            melon_id_dictionary[id]["qty"] += 1
+            melon_id_dictionary[id]["subtotal"] += melons.get_by_id(id).price
+        else:
+            melon_id_dictionary[id] = melons.get_by_id(id)
+            melon_id_dictionary[id]["qty"] = 1
+            melon_id_dictionary[id]["price"] = melons.get_by_id(id).price
+            melon_id_dictionary[id]["common_name"] = melons.get_by_id(id).common_name
+            melon_id_dictionary[id]["subtotal"] = melons.get_by_id(id).price
+
+            # item = get_by_id(id)
+            # if len(melon_object_list) > 0:
+            #     melon_object_list.append(item)
+            # else:
+            #     melon_object_list = 
+# ADD LOOP THROUGH DICATIONARY TO BUILD CART IN CART.HTML VIA JINJA
+
 
     return render_template("cart.html")
 
@@ -88,7 +110,16 @@ def add_to_cart(id):
     #
     # - add the id of the melon they bought to the cart in the session
 
-    return "Oops! This needs to be implemented!"
+    if "cart" in session:
+        session["cart"].append(id)
+    else:
+        session["cart"] = [id]
+    
+    flash("Successfully added to cart")
+    
+    return render_template("cart.html")
+
+    # return "Oops! This needs to be implemented!"
 
 
 @app.route("/login", methods=["GET"])
