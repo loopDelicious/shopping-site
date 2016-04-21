@@ -100,7 +100,6 @@ def shopping_cart():
     #         melon_id_dictionary[id]["common_name"] = melons.get_by_id(id).common_name
     #         melon_id_dictionary[id]["subtotal"] = melons.get_by_id(id).price
 
-    print melon_id_dictionary
     return render_template("cart.html",
                             melon_id_dictionary = melon_id_dictionary,
                             total="%.2f" % order_total)

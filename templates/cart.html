@@ -1,6 +1,10 @@
 
 {% extends 'base.html' %}
 
+{% block head%}
+  <title>Cart</title>
+{% endblock %}
+
 {% block body %}
 
     <table class="table table-striped">
@@ -18,8 +22,8 @@
         <tr>
             <td>{{melon_id_dictionary[order]["common_name"]}}</td>
             <td>{{melon_id_dictionary[order]["qty"]}}</td>
-            <td>{{melon_id_dictionary[order]["price"]}}</td>
-            <td>{{melon_id_dictionary[order]["subtotal"]}}</td>
+            <td>{{"%.2f" % melon_id_dictionary[order]["price"]|float}}</td>
+            <td>{{"%.2f" % melon_id_dictionary[order]["subtotal"]|float}}</td>
         </tr>
         {%endfor%}
         </tbody>
