@@ -8,13 +8,13 @@ Authors: Joel Burton, Christian Fernandez, Meggie Mahnken.
 
 
 from flask import Flask, render_template, redirect, flash, session
+from flask_debugtoolbar import DebugToolbarExtension
 import jinja2
 
 import melons
 
 
 app = Flask(__name__)
-
 # Need to use Flask sessioning features
 
 app.secret_key = 'this-should-be-something-unguessable'
@@ -79,21 +79,31 @@ def shopping_cart():
             melon_id_dictionary[id]["qty"] += 1
             melon_id_dictionary[id]["subtotal"] += melons.get_by_id(id).price
         else:
-            melon_id_dictionary[id] = melons.get_by_id(id)
+            melon_id_dictionary[id] = {}
             melon_id_dictionary[id]["qty"] = 1
             melon_id_dictionary[id]["price"] = melons.get_by_id(id).price
             melon_id_dictionary[id]["common_name"] = melons.get_by_id(id).common_name
-            melon_id_dictionary[id]["subtotal"] = melons.get_by_id(id).price
+            melon_id_dictionary[id]["subtotal"] = melon_id_dictionary[id]["price"]
 
-            # item = get_by_id(id)
-            # if len(melon_object_list) > 0:
-            #     melon_object_list.append(item)
-            # else:
-            #     melon_object_list = 
-# ADD LOOP THROUGH DICATIONARY TO BUILD CART IN CART.HTML VIA JINJA
+    order_total = 0
+    for melon in melon_id_dictionary:
+        order_total +=  melon_id_dictionary[melon]["subtotal"]
 
+    # for id in shopping_list:
+    #     melon_id_dictionary.setdefault(id, {})   
+    #     if id in melon_id_dictionary:
+    #         melon_id_dictionary[id]["qty"] += 1
+    #         melon_id_dictionary[id]["subtotal"] += melons.get_by_id(id).price
+    #     else:
+    #         melon_id_dictionary[id]["qty"] = 1
+    #         melon_id_dictionary[id]["price"] = melons.get_by_id(id).price
+    #         melon_id_dictionary[id]["common_name"] = melons.get_by_id(id).common_name
+    #         melon_id_dictionary[id]["subtotal"] = melons.get_by_id(id).price
 
-    return render_template("cart.html")
+    print melon_id_dictionary
+    return render_template("cart.html",
+                            melon_id_dictionary = melon_id_dictionary,
+                            total="%.2f" % order_total)
 
 
 @app.route("/add_to_cart/<int:id>")
@@ -117,7 +127,7 @@ def add_to_cart(id):
     
     flash("Successfully added to cart")
     
-    return render_template("cart.html")
+    return redirect("/cart")
 
     # return "Oops! This needs to be implemented!"
 
@@ -154,4 +164,6 @@ def checkout():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.debug=True
+    DebugToolbarExtension(app)
+    app.run()
