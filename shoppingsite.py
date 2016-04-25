@@ -8,13 +8,14 @@ Authors: Joel Burton, Christian Fernandez, Meggie Mahnken.
 
 
 from flask import Flask, render_template, redirect, flash, session
-from flask_debugtoolbar import DebugToolbarExtension
 import jinja2
+from flask_debugtoolbar import DebugToolbarExtension
 
 import melons
 
 
 app = Flask(__name__)
+
 # Need to use Flask sessioning features
 
 app.secret_key = 'this-should-be-something-unguessable'
@@ -63,46 +64,50 @@ def shopping_cart():
     # TODO: Display the contents of the shopping cart.
 
     # The logic here will be something like:
-    
+    #
     # - get the list-of-ids-of-melons from the session cart
     # - loop over this list:
     #   - keep track of information about melon types in the cart
     #   - keep track of the total amt ordered for a melon-type
     #   - keep track of the total amt of the entire order
     # - hand to the template the total order cost and the list of melon types
-    shopping_list = session["cart"]
-
-    melon_id_dictionary = {}
-    
-    for id in shopping_list:
-        if id in melon_id_dictionary:
-            melon_id_dictionary[id]["qty"] += 1
-            melon_id_dictionary[id]["subtotal"] += melons.get_by_id(id).price
-        else:
-            melon_id_dictionary[id] = {}
-            melon_id_dictionary[id]["qty"] = 1
-            melon_id_dictionary[id]["price"] = melons.get_by_id(id).price
-            melon_id_dictionary[id]["common_name"] = melons.get_by_id(id).common_name
-            melon_id_dictionary[id]["subtotal"] = melon_id_dictionary[id]["price"]
 
     order_total = 0
-    for melon in melon_id_dictionary:
-        order_total +=  melon_id_dictionary[melon]["subtotal"]
 
-    # for id in shopping_list:
-    #     melon_id_dictionary.setdefault(id, {})   
-    #     if id in melon_id_dictionary:
-    #         melon_id_dictionary[id]["qty"] += 1
-    #         melon_id_dictionary[id]["subtotal"] += melons.get_by_id(id).price
-    #     else:
-    #         melon_id_dictionary[id]["qty"] = 1
-    #         melon_id_dictionary[id]["price"] = melons.get_by_id(id).price
-    #         melon_id_dictionary[id]["common_name"] = melons.get_by_id(id).common_name
-    #         melon_id_dictionary[id]["subtotal"] = melons.get_by_id(id).price
+    # get the list of melon ids from the session dictionary (cart key), or an 
+    # empty list if it doesn't exist
+    cart_ids = session.get('cart', [])
 
-    return render_template("cart.html",
-                            melon_id_dictionary = melon_id_dictionary,
-                            total="%.2f" % order_total)
+    # keep track of melon info in cart dictionary
+    cart_dict = {}
+
+    # for every melon id in the cart ids list, if the melon id is in the 
+    # cart dictionary, melon info will be bound to the values of a melon
+    for melon_id in cart_ids:
+        if melon_id in cart_dict:
+            melon_info = cart_dict[melon_id]
+        # if the melon id is not in the cart dictionary, pull in the melon object
+        # and the melon info will be bound to the values of the melon
+        else:
+            melon_object = melons.get_by_id(melon_id)
+            melon_info = cart_dict[melon_id] = {
+                'common_name': melon_object.common_name,
+                'unit_cost': melon_object.price,
+                'qty': 0,
+                'total_cost': 0,
+            }
+        
+        # increment quantity and melon subtotal by this melon in cart list
+        melon_info['qty'] += 1
+        melon_info['total_cost'] += melon_info['unit_cost']
+
+        # increment order total by this melon
+        order_total += melon_info['unit_cost']
+
+    # cart variable will be bound to a list of melon values displaying melon info
+    cart = cart_dict.values()
+
+    return render_template("cart.html", cart=cart, order_total=order_total)
 
 
 @app.route("/add_to_cart/<int:id>")
@@ -119,16 +124,20 @@ def add_to_cart(id):
     #
     # - add the id of the melon they bought to the cart in the session
 
-    if "cart" in session:
-        session["cart"].append(id)
-    else:
-        session["cart"] = [id]
-    
-    flash("Successfully added to cart")
-    
-    return redirect("/cart")
-
     # return "Oops! This needs to be implemented!"
+
+    #if the cart does not exist in the session dictionary, create one
+    if 'cart' not in session:
+        session['cart'] = []
+   
+    # add melon's id to the cart list
+    session['cart'].append(id)
+
+    # display a confirmation message
+    flash("Successfully added to cart.")
+
+    # redirect to /cart page
+    return redirect("/cart")
 
 
 @app.route("/login", methods=["GET"])
@@ -163,6 +172,7 @@ def checkout():
 
 
 if __name__ == "__main__":
-    app.debug=True
+    app.debug = True
     DebugToolbarExtension(app)
     app.run()
+
